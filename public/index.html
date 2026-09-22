@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>E-Commerce API — Test Dashboard</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, Segoe UI, Arial, sans-serif; margin: 0; background: #f4f5f7; color: #1a1a1a; }
+  header { background: #1d2733; color: #fff; padding: 18px 24px; }
+  header h1 { margin: 0; font-size: 20px; }
+  header p { margin: 4px 0 0; font-size: 13px; color: #b8c2cc; }
+  main { max-width: 1100px; margin: 0 auto; padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .full { grid-column: 1 / -1; }
+  section { background: #fff; border: 1px solid #e0e2e6; border-radius: 8px; padding: 16px; }
+  h2 { font-size: 15px; margin: 0 0 12px; color: #1d2733; }
+  label { display: block; font-size: 12px; color: #555; margin-top: 8px; }
+  input, textarea { width: 100%; padding: 6px 8px; font-size: 13px; border: 1px solid #cfd3d8; border-radius: 4px; margin-top: 2px; }
+  textarea { font-family: monospace; min-height: 90px; }
+  button { margin-top: 10px; padding: 7px 14px; font-size: 13px; border: none; border-radius: 4px; background: #2563eb; color: #fff; cursor: pointer; }
+  button.secondary { background: #6b7280; }
+  button.danger { background: #dc2626; }
+  button:hover { opacity: 0.9; }
+  .row { display: flex; gap: 8px; }
+  .row > div { flex: 1; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #eee; }
+  th { color: #555; font-weight: 600; }
+  .actions button { margin: 2px 4px 2px 0; padding: 4px 8px; font-size: 12px; }
+  pre#output { background: #0f172a; color: #e2e8f0; padding: 12px; border-radius: 6px; font-size: 12px; overflow-x: auto; max-height: 400px; white-space: pre-wrap; word-break: break-word; }
+  .status { font-size: 12px; margin-top: 6px; font-weight: 600; }
+  .status.ok { color: #16a34a; }
+  .status.err { color: #dc2626; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>E-Commerce API — Test Dashboard</h1>
+  <p>Every button here just calls your Express API underneath and shows the raw JSON it returns.</p>
+</header>
+
+<main>
+
+  <section class="full">
+    <h2>1. List products</h2>
+    <div class="row">
+      <div>
+        <label>Category (optional)</label>
+        <input id="q-category" placeholder="Electronics">
+      </div>
+      <div>
+        <label>Fields (optional, comma-separated)</label>
+        <input id="q-fields" placeholder="id,name,price">
+      </div>
+      <div>
+        <label>Limit</label>
+        <input id="q-limit" type="number" min="0" placeholder="e.g. 5">
+      </div>
+      <div>
+        <label>Offset</label>
+        <input id="q-offset" type="number" min="0" placeholder="e.g. 0">
+      </div>
+    </div>
+    <button onclick="loadProducts()">Get products</button>
+    <table id="product-table">
+      <thead><tr><th>ID</th><th>Name</th><th>Price</th><th>Category</th><th>Stock</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>2. Add a product (POST)</h2>
+    <label>Name</label>
+    <input id="add-name">
+    <label>Description</label>
+    <input id="add-description">
+    <div class="row">
+      <div><label>Price</label><input id="add-price" type="number" step="0.01"></div>
+      <div><label>Stock</label><input id="add-stock" type="number"></div>
+    </div>
+    <label>Category</label>
+    <input id="add-category">
+    <button onclick="addProduct()">Create product</button>
+  </section>
+
+  <section>
+    <h2>3. Update a product (PUT — idempotent)</h2>
+    <label>Product ID</label>
+    <input id="upd-id" type="number">
+    <label>Name</label>
+    <input id="upd-name">
+    <div class="row">
+      <div><label>Price</label><input id="upd-price" type="number" step="0.01"></div>
+      <div><label>Stock</label><input id="upd-stock" type="number"></div>
+    </div>
+    <label>Category</label>
+    <input id="upd-category">
+    <button onclick="updateProduct()">Update product</button>
+  </section>
+
+  <section class="full">
+    <h2>4. GraphQL — ask for only the fields you want</h2>
+    <textarea id="gql-query">{ products { id name price } }</textarea>
+    <button onclick="runGraphQL()">Run GraphQL query</button>
+  </section>
+
+  <section class="full">
+    <h2>Raw response from the server</h2>
+    <div id="status" class="status"></div>
+    <pre id="output">Nothing yet — click a button above.</pre>
+  </section>
+
+</main>
+
+<script>
+const API = "/api/v1/products";
+
+function showResult(status, ok, data) {
+  document.getElementById("status").textContent = status;
+  document.getElementById("status").className = "status " + (ok ? "ok" : "err");
+  document.getElementById("output").textContent = JSON.stringify(data, null, 2);
+}
+
+async function loadProducts() {
+  const category = document.getElementById("q-category").value.trim();
+  const fields = document.getElementById("q-fields").value.trim();
+  const limit = document.getElementById("q-limit").value.trim();
+  const offset = document.getElementById("q-offset").value.trim();
+
+  const params = new URLSearchParams();
+  if (category) params.set("category", category);
+  if (fields) params.set("fields", fields);
+  if (limit) params.set("limit", limit);
+  if (offset) params.set("offset", offset);
+
+  const res = await fetch(`${API}?${params.toString()}`);
+  const json = await res.json();
+  showResult(`GET ${API}?${params.toString()}  →  ${res.status}`, res.ok, json);
+
+  const tbody = document.querySelector("#product-table tbody");
+  tbody.innerHTML = "";
+  const list = json.data || [];
+  list.forEach(p => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${p.id ?? ""}</td>
+      <td>${p.name ?? ""}</td>
+      <td>${p.price ?? ""}</td>
+      <td>${p.category ?? ""}</td>
+      <td>${p.stock ?? ""}</td>
+      <td class="actions">
+        <button class="secondary" onclick="fillUpdateForm(${p.id})">Edit</button>
+        <button class="danger" onclick="deleteProduct(${p.id})">Delete</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+async function addProduct() {
+  const body = {
+    name: document.getElementById("add-name").value,
+    description: document.getElementById("add-description").value,
+    price: parseFloat(document.getElementById("add-price").value),
+    stock: parseInt(document.getElementById("add-stock").value) || 0,
+    category: document.getElementById("add-category").value
+  };
+  const res = await fetch(API, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  const json = await res.json();
+  showResult(`POST ${API}  →  ${res.status}`, res.ok, json);
+  if (res.ok) loadProducts();
+}
+
+function fillUpdateForm(id) {
+  document.getElementById("upd-id").value = id;
+  document.getElementById("upd-id").scrollIntoView({ behavior: "smooth" });
+}
+
+async function updateProduct() {
+  const id = document.getElementById("upd-id").value;
+  if (!id) { alert("Enter a product ID first (or click Edit on a row)."); return; }
+  const body = {
+    name: document.getElementById("upd-name").value,
+    price: parseFloat(document.getElementById("upd-price").value),
+    stock: parseInt(document.getElementById("upd-stock").value) || 0,
+    category: document.getElementById("upd-category").value
+  };
+  const res = await fetch(`${API}/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  const json = await res.json();
+  showResult(`PUT ${API}/${id}  →  ${res.status}`, res.ok, json);
+  if (res.ok) loadProducts();
+}
+
+async function deleteProduct(id) {
+  if (!confirm(`Delete product ${id}?`)) return;
+  const res = await fetch(`${API}/${id}`, { method: "DELETE" });
+  const json = res.status === 204 ? { message: "Deleted, no content returned (204)." } : await res.json();
+  showResult(`DELETE ${API}/${id}  →  ${res.status}`, res.ok, json);
+  loadProducts();
+}
+
+async function runGraphQL() {
+  const query = document.getElementById("gql-query").value;
+  const res = await fetch("/graphql", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query })
+  });
+  const json = await res.json();
+  showResult(`POST /graphql  →  ${res.status}`, res.ok, json);
+}
+
+loadProducts();
+</script>
+
+</body>
+</html>

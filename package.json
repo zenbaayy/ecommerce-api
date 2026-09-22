@@ -1,0 +1,17 @@
+{
+  "name": "ecommerce-api",
+  "version": "1.0.0",
+  "description": "CSC337 Lab Assignment 03 - Enterprise RESTful API & GraphQL for E-Commerce",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["express", "rest", "graphql", "csc337"],
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2",
+    "express-graphql": "^0.12.0",
+    "graphql": "^15.8.0"
+  }
+}
