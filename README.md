@@ -163,9 +163,8 @@ git init
 git add .
 git commit -m "CSC337 Lab 03: RESTful API + GraphQL"
 git branch -M main
-git remote add origin https://github.com/<your-username>/ecommerce-api.git
+git remote add origin https://github.com/zenbaayy/ecommerce-api.git
 git push -u origin main
 ```
 
-Make sure the repository visibility is set to **Public** before
-submitting — the assignment gives 0 marks for private repos.
+
