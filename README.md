@@ -46,13 +46,13 @@ the server restarts — no database setup required.
   (still) absent either way — it's not creating a new side effect.
 - **Standardized JSON errors** — every error, from every route, has the
   same shape (`error_code`, `message`, `timestamp`):
-  ```json
+```json
   {
     "error_code": "PRODUCT_NOT_FOUND",
     "message": "Product with id 99 not found.",
     "timestamp": "2026-09-23T05:53:10.128Z"
   }
-  ```
+```
   Common `error_code` values: `VALIDATION_ERROR` (400), `PRODUCT_NOT_FOUND`
   (404), `ROUTE_NOT_FOUND` (404), `INTERNAL_SERVER_ERROR` (500).
 
@@ -136,35 +136,55 @@ All errors are funneled through one centralized handler
 route, missing resource — returns the same JSON shape:
 
 ```json
-{ "error": { "code": 400, "message": "`name` is required and must be a non-empty string." } }
+{
+  "error_code": "VALIDATION_ERROR",
+  "message": "`name` is required and must be a non-empty string.",
+  "timestamp": "2026-09-23T05:53:10.128Z"
+}
 ```
+
+## Module Breakdown
+
+### Module 1 — RESTful Architecture & Resource Modeling
+- Noun-based URI: `/api/v1/products` (not `/getProductsList`)
+- Correct HTTP verbs: `GET`, `POST`, `PUT`, `DELETE`
+- Idempotent `PUT` and `DELETE` — repeating the same call never corrupts
+  state or creates duplicates
+- Filtering and pagination via query params: `?category=Electronics&limit=5&offset=0`
+
+### Module 2 — Consistent Error Schema & Status Codes
+- `400 Bad Request` — invalid/missing input (e.g. missing `name` or `price`)
+- `404 Not Found` — product ID doesn't exist
+- `201 Created` — successful resource creation
+- Every error returns the same JSON shape (see "Error Handling" above)
+
+### Module 3 — Over-Fetching Solution (GraphQL + Field Selection)
+- REST field selector: `?fields=id,name,price` returns only the requested keys
+- GraphQL endpoint at `/graphql` — client's query shape controls exactly
+  which fields come back, solving over-fetching at the protocol level
+
+## Testing
+
+The project was tested manually using:
+- The built-in dashboard at `http://localhost:3000/` (buttons for every
+  CRUD action, pagination, field selection, and GraphQL queries)
+- `curl` commands (see examples above) to verify status codes and error
+  responses for each endpoint
+- The GraphiQL playground at `http://localhost:3000/graphql`
+
+### Test cases covered
+| Test | Expected result |
+|---|---|
+| `GET /api/v1/products` | 200, full list |
+| `GET /api/v1/products?fields=name,price` | 200, only requested fields |
+| `GET /api/v1/products?limit=2&offset=0` | 200, 2 items + pagination metadata |
+| `GET /api/v1/products/999` (non-existent) | 404, `PRODUCT_NOT_FOUND` |
+| `POST /api/v1/products` with missing `name` | 400, `VALIDATION_ERROR` |
+| `POST /api/v1/products` with valid body | 201, created product returned |
+| `PUT /api/v1/products/:id` (valid) | 200, updated product |
+| `PUT /api/v1/products/:id` called twice | 200 both times, same end state (idempotent) |
+| `DELETE /api/v1/products/:id` | 204, no content |
+| `DELETE /api/v1/products/:id` again | 404, `PRODUCT_NOT_FOUND` |
+| GraphQL `{ products { id name price } }` | 200, only those 3 fields per product |
 
 ## Project Structure
-
-```
-ecommerce-api/
-├── server.js                    # app entry point, wires everything together
-├── public/index.html            # test dashboard — served at http://localhost:3000/
-├── src/
-│   ├── data/products.js         # in-memory data + CRUD functions
-│   ├── routes/products.js       # REST route handlers
-│   ├── middleware/errorHandler.js
-│   ├── utils/selectFields.js    # ?fields= partial-response helper
-│   └── graphql/schema.js        # GraphQL types, queries, mutations
-├── package.json
-└── README.md
-```
-
-## Publishing to GitHub (for submission)
-
-```bash
-cd ecommerce-api
-git init
-git add .
-git commit -m "CSC337 Lab 03: RESTful API + GraphQL"
-git branch -M main
-git remote add origin https://github.com/zenbaayy/ecommerce-api.git
-git push -u origin main
-```
-
-
