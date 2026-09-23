@@ -151,17 +151,23 @@ route, missing resource — returns the same JSON shape:
 - Idempotent `PUT` and `DELETE` — repeating the same call never corrupts
   state or creates duplicates
 - Filtering and pagination via query params: `?category=Electronics&limit=5&offset=0`
+  
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/6fa3d817-48e1-4c00-8266-a11cf5c0f76f" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/d0e4b40e-5394-40ef-86b1-45275be53306" />
 
 ### Module 2 — Consistent Error Schema & Status Codes
 - `400 Bad Request` — invalid/missing input (e.g. missing `name` or `price`)
 - `404 Not Found` — product ID doesn't exist
 - `201 Created` — successful resource creation
 - Every error returns the same JSON shape (see "Error Handling" above)
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/a40c1177-473e-4491-bb59-ff66d672038f" />
 
 ### Module 3 — Over-Fetching Solution (GraphQL + Field Selection)
 - REST field selector: `?fields=id,name,price` returns only the requested keys
 - GraphQL endpoint at `/graphql` — client's query shape controls exactly
   which fields come back, solving over-fetching at the protocol level
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/29eb9a38-73fa-4c38-b6cc-5174afd76db0" />
 
 ## Testing
 
@@ -186,6 +192,11 @@ The project was tested manually using:
 | `DELETE /api/v1/products/:id` | 204, no content |
 | `DELETE /api/v1/products/:id` again | 404, `PRODUCT_NOT_FOUND` |
 | GraphQL `{ products { id name price } }` | 200, only those 3 fields per product |
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/b3547fac-8ec5-43e7-a9a5-10162959d173" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/cb803fec-bb46-4a31-a2da-f26d54ef8016" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/039a3ff0-6c57-4413-878f-f67f4393f2a1" />
+
+
 
 ## Project Structure
 ```
@@ -212,5 +223,17 @@ git commit -m "CSC337 Lab 03: RESTful API + GraphQL"
 git branch -M main
 git remote add origin https://github.com/<your-username>/ecommerce-api.git
 git push -u origin main
+
+
+
+
+
+
+
+
+
+
+
+
 ```
 
