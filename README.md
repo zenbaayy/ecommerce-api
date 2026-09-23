@@ -188,3 +188,27 @@ The project was tested manually using:
 | GraphQL `{ products { id name price } }` | 200, only those 3 fields per product |
 
 ## Project Structure
+ecommerce-api/
+├── server.js                    # app entry point, wires everything together
+├── public/index.html            # test dashboard — served at http://localhost:3000/
+├── src/
+│   ├── data/products.js         # in-memory data + CRUD functions
+│   ├── routes/products.js       # REST route handlers
+│   ├── middleware/errorHandler.js
+│   ├── utils/selectFields.js    # ?fields= partial-response helper
+│   └── graphql/schema.js        # GraphQL types, queries, mutations
+├── package.json
+└── README.md
+
+## Publishing to GitHub (for submission)
+
+```bash
+cd ecommerce-api
+git init
+git add .
+git commit -m "CSC337 Lab 03: RESTful API + GraphQL"
+git branch -M main
+git remote add origin https://github.com/<your-username>/ecommerce-api.git
+git push -u origin main
+```
+
